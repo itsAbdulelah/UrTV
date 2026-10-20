@@ -1,15 +1,21 @@
 name: Clubs and their ids
 
-# TheSportsDB is unreachable from the dev container; CI lists every club of the app's
-# leagues and the national teams, with their ids, in the data-team-ids branch for review.
-# Monthly too, for promoted and renamed clubs.
+# TheSportsDB, Wikidata and Wikipedia are unreachable from the dev container; CI lists every club of the app's
+# leagues and the national teams, with their ids and Arabic names, in the data-team-ids branch for review
+# (teams/teams.json, teams/diff.md: added, removed and renamed since assets/shared/teams.json, teams/report.json).
+# Monthly too, for promoted and renamed clubs. The data is pushed even when a check fails, and the job then goes red.
 on:
   workflow_dispatch:
   schedule:
     - cron: '17 3 1 * *'
   push:
     branches: [master, next]
-    paths: ['.github/tools/team_ids.py', 'android/app/src/main/java/sa/urtv/screensaver/Prefs.java']
+    paths:
+      - '.github/tools/team_ids.py'
+      - '.github/tools/saudi-clubs-ar.json'
+      - '.github/workflows/team-ids.yml'
+      - 'assets/shared/teams-ar.json'
+      - 'android/app/src/main/java/sa/urtv/screensaver/Prefs.java'
 
 permissions:
   contents: write
@@ -17,11 +23,15 @@ permissions:
 jobs:
   ids:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - run: python3 .github/tools/team_ids.py
+      - id: run
+        run: python3 -u .github/tools/team_ids.py
+        continue-on-error: true
       - name: Push to data-team-ids
         run: |
+          test -f teams/teams.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan data-team-ids
@@ -29,3 +39,6 @@ jobs:
           git add teams
           git commit -qm "Clubs and national teams with their TheSportsDB ids"
           git push -f origin data-team-ids
+      - name: Fail if a check failed
+        if: steps.run.outcome != 'success'
+        run: exit 1
