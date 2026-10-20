@@ -114,10 +114,15 @@ def main():
     wrong = {i: n for i, n in KNOWN.items() if team_key(teams.get(i, {}).get("en", "")) != team_key(n)}
     if wrong:
         raise SystemExit(f"these ids didn't come out right, not trusting this: {wrong}")
-    arabic = {team_key(en): ar for en, ar in
-              json.loads(Path("assets/shared/teams-ar.json").read_text(encoding="utf-8")).items()}
-    out = [{"id": i, "en": t["en"], "ar": t["ar"] or arabic.get(team_key(t["en"]), ""), "leagues": t["leagues"]}
-           for i, t in teams.items()]
+    # "Al-Faisaly" and "Al Faisaly" are one key but two clubs: the Saudi clubs come first in teams-ar.json,
+    # so a club of a Saudi league takes the first Arabic name for its key and any other club the last
+    names = json.loads(Path("assets/shared/teams-ar.json").read_text(encoding="utf-8")).items()
+    last = {team_key(en): ar for en, ar in names}
+    first = {team_key(en): ar for en, ar in reversed(list(names))}
+
+    def arabic(t):
+        return (first if any("Saudi" in l for l in t["leagues"]) else last).get(team_key(t["en"]), "")
+    out = [{"id": i, "en": t["en"], "ar": t["ar"] or arabic(t), "leagues": t["leagues"]} for i, t in teams.items()]
     order = club_leagues + ["National teams"]
     out.sort(key=lambda t: (order.index(t["leagues"][0]), t["en"]))
     report["teams"] = len(out)
