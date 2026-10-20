@@ -611,8 +611,10 @@ const TEAM_AR = __TEAMS_AR__;   // assets/shared/teams-ar.json
 // match "Al-Adalah", "Al Adalah", "Al-Adalah FC" and "AL ADALAH" to the same entry
 const teamKey = s => String(s).toLowerCase().replace(/\b(fc|sc|cf|afc|club|saudi club)\b/g,'')
   .replace(/[^a-z0-9]+/g,' ').trim().replace(/^al /,'al');
+const TEAM_BY_ID = __TEAMS_BY_ID__;   // assets/shared/teams.json: TheSportsDB id -> Arabic
 const TEAM_KEYS = {};
-for(const [en, arName] of Object.entries(TEAM_AR)) TEAM_KEYS[teamKey(en)] = arName;
+// first entry wins on a clash: the Saudi "Al-Faisaly" before the Jordanian "Al Faisaly"
+for(const [en, arName] of Object.entries(TEAM_AR)) if(!(teamKey(en) in TEAM_KEYS)) TEAM_KEYS[teamKey(en)] = arName;
 let MATCHES = {};   // team id -> next event
 let RESULTS = {};   // team id -> recent events
 let NEXT_LIST = {};   // team id -> upcoming events
@@ -671,7 +673,8 @@ async function wikidataArabic(en, kind){
 }
 
 let arQueue = Promise.resolve();
-function arName(en, kind){
+function arName(en, kind, id){
+  if(kind === 'team' && id && TEAM_BY_ID[id]) return TEAM_BY_ID[id];
   en = String(en || '').trim();
   if(!en || hasArabic(en)) return en;
   if(kind === 'team'){
@@ -693,7 +696,7 @@ function arName(en, kind){
   }
   return translit(en);
 }
-const teamAr = s => arName(s, 'team');
+const teamAr = (s, id) => arName(s, 'team', id);
 
 async function fetchNext(id){
   const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventsnext.php?id=${id}`,{cache:'no-store'});
@@ -737,12 +740,12 @@ function matchSlot(id, now, shown){
     shown.add(done.idEvent);
     const day = new Intl.DateTimeFormat(GREG,{timeZone:CONFIG.timezone,weekday:'long'}).format(toDate(done));
     return `<div class="mblock">`
-      + `<div class="big"><span>${esc(teamAr(done.strHomeTeam))} <span class="sc">${ar(+done.intHomeScore)} - ${ar(+done.intAwayScore)}</span> ${esc(teamAr(done.strAwayTeam))}</span></div>`
+      + `<div class="big"><span>${esc(teamAr(done.strHomeTeam, done.idHomeTeam))} <span class="sc">${ar(+done.intHomeScore)} - ${ar(+done.intAwayScore)}</span> ${esc(teamAr(done.strAwayTeam, done.idAwayTeam))}</span></div>`
       + `<div class="sub">النتيجة النهائية · ${day}</div></div>`;
   }
   const ev = MATCHES[id];
   if(!ev || shown.has(ev.idEvent)) return '';
-  const home = esc(teamAr(ev.strHomeTeam)), away = esc(teamAr(ev.strAwayTeam));
+  const home = esc(teamAr(ev.strHomeTeam, ev.idHomeTeam)), away = esc(teamAr(ev.strAwayTeam, ev.idAwayTeam));
   const d = toDate(ev), diff = d - now;
   if(diff < -2.5*3600000 || diff > CONFIG.weekWindowDays * 86400000) return '';   // in progress stays on screen
   shown.add(ev.idEvent);
@@ -1041,7 +1044,7 @@ function matchRows(){
         : now >= t ? '<span class="live">مباشر</span>'
         : (new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone}).format(d) === today ? 'اليوم' : day(d))
           + ' ' + fmt12(+p.hour % 24, +p.minute);
-      return `<li><span>${esc(teamAr(ev.strHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam))}</span><span class="dt">${when}</span></li>`;
+      return `<li><span>${esc(teamAr(ev.strHomeTeam, ev.idHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam, ev.idAwayTeam))}</span><span class="dt">${when}</span></li>`;
     });
 }
 

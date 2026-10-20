@@ -615,8 +615,10 @@ const TEAM_AR = {"Al-Hilal": "الهلال", "Al-Hazem": "الحزم", "Al-Nassr
 // match "Al-Adalah", "Al Adalah", "Al-Adalah FC" and "AL ADALAH" to the same entry
 const teamKey = s => String(s).toLowerCase().replace(/\b(fc|sc|cf|afc|club|saudi club)\b/g,'')
   .replace(/[^a-z0-9]+/g,' ').trim().replace(/^al /,'al');
+const TEAM_BY_ID = {"137721": "الأهلي", "136017": "الاتفاق", "136011": "الفتح", "136014": "الفيحاء", "136200": "الحزم", "136013": "الهلال", "136018": "الاتحاد", "139080": "الخليج", "149112": "الخلود", "150638": "النجمة", "136022": "النصر", "147444": "الأخدود", "149111": "العروبة", "136015": "القادسية", "136016": "الرائد", "147445": "الرياض", "136020": "الشباب", "136012": "التعاون", "136199": "الوحدة", "137852": "ضمك", "150637": "نيوم", "137855": "أبها", "137854": "العدالة", "140405": "العين", "152918": "الأنوار", "150639": "العربي", "136019": "الباطن", "150640": "البكيرية", "152917": "الدرعية", "136021": "الفيصلي", "150091": "الجبلين", "150644": "الجندل", "150645": "الجبيل", "150642": "الصفا", "143173": "الطائي", "152473": "العلا", "150643": "الزلفي", "150641": "جدة", "150646": "أحد", "133604": "آرسنال", "133601": "أستون فيلا", "134301": "بورنموث", "134355": "برينتفورد", "133619": "برايتون", "133610": "تشيلسي", "133632": "كريستال بالاس", "133615": "إيفرتون", "133600": "فولهام", "133602": "ليفربول", "133613": "مانشستر سيتي", "133612": "مانشستر يونايتد", "134777": "نيوكاسل", "133720": "نوتنغهام فورست", "133616": "توتنهام", "133636": "وست هام", "133599": "وولفرهامبتون", "133727": "أتلتيك بلباو", "133739": "برشلونة", "134700": "جيرونا", "133722": "ريال بيتيس", "133738": "ريال مدريد", "133724": "ريال سوسيداد", "133735": "إشبيلية", "133725": "فالنسيا", "133740": "فياريال", "133667": "ميلان", "134782": "أتالانتا", "133674": "فيورنتينا", "133681": "إنتر ميلان", "133676": "يوفنتوس", "133668": "لاتسيو", "133670": "نابولي", "133666": "باير ليفركوزن", "133664": "بايرن ميونخ", "133650": "دورتموند", "133814": "آينتراخت فرانكفورت", "134695": "لايبزيغ", "133711": "ليل", "133713": "ليون", "133707": "مارسيليا", "133823": "موناكو", "133712": "نيس", "133714": "باريس سان جيرمان", "134108": "بنفيكا", "134114": "بورتو", "135708": "سبورتينغ لشبونة", "133772": "أياكس", "133758": "فينورد", "133768": "آيندهوفن", "133804": "غلطة سراي", "133796": "طرابزون سبور", "138995": "الأهلي المصري", "139838": "بيراميدز", "138997": "الزمالك", "137832": "العين", "137830": "الجزيرة", "137836": "الوحدة الإماراتي", "137835": "الوصل", "137829": "الشارقة", "135946": "العربي", "137679": "الدحيل", "138029": "الغرافة", "138050": "الريان", "137648": "السد", "137995": "قطر", "134516": "الجزائر", "134509": "الأرجنتين", "134500": "أستراليا", "140149": "البحرين", "134515": "بلجيكا", "134496": "البرازيل", "134498": "الكاميرون", "134579": "الصين", "134501": "كولومبيا", "133912": "كرواتيا", "136138": "مصر", "133914": "إنجلترا", "133913": "فرنسا", "133907": "ألمانيا", "134511": "إيران", "140148": "العراق", "133910": "إيطاليا", "134503": "اليابان", "140144": "الكويت", "140166": "لبنان", "136489": "ليبيا", "134497": "المكسيك", "136139": "المغرب", "133905": "هولندا", "134512": "نيجيريا", "140155": "عمان", "140154": "فلسطين", "133908": "البرتغال", "136472": "قطر", "136137": "السعودية", "136143": "السنغال", "134517": "كوريا الجنوبية", "133909": "إسبانيا", "136495": "السودان", "140032": "سوريا", "136142": "تونس", "135985": "تركيا", "140163": "الإمارات", "134504": "الأوروغواي", "140151": "أوزبكستان", "140153": "اليمن"};   // assets/shared/teams.json: TheSportsDB id -> Arabic
 const TEAM_KEYS = {};
-for(const [en, arName] of Object.entries(TEAM_AR)) TEAM_KEYS[teamKey(en)] = arName;
+// first entry wins on a clash: the Saudi "Al-Faisaly" before the Jordanian "Al Faisaly"
+for(const [en, arName] of Object.entries(TEAM_AR)) if(!(teamKey(en) in TEAM_KEYS)) TEAM_KEYS[teamKey(en)] = arName;
 let MATCHES = {};   // team id -> next event
 let RESULTS = {};   // team id -> recent events
 let NEXT_LIST = {};   // team id -> upcoming events
@@ -675,7 +677,8 @@ async function wikidataArabic(en, kind){
 }
 
 let arQueue = Promise.resolve();
-function arName(en, kind){
+function arName(en, kind, id){
+  if(kind === 'team' && id && TEAM_BY_ID[id]) return TEAM_BY_ID[id];
   en = String(en || '').trim();
   if(!en || hasArabic(en)) return en;
   if(kind === 'team'){
@@ -697,7 +700,7 @@ function arName(en, kind){
   }
   return translit(en);
 }
-const teamAr = s => arName(s, 'team');
+const teamAr = (s, id) => arName(s, 'team', id);
 
 async function fetchNext(id){
   const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventsnext.php?id=${id}`,{cache:'no-store'});
@@ -741,12 +744,12 @@ function matchSlot(id, now, shown){
     shown.add(done.idEvent);
     const day = new Intl.DateTimeFormat(GREG,{timeZone:CONFIG.timezone,weekday:'long'}).format(toDate(done));
     return `<div class="mblock">`
-      + `<div class="big"><span>${esc(teamAr(done.strHomeTeam))} <span class="sc">${ar(+done.intHomeScore)} - ${ar(+done.intAwayScore)}</span> ${esc(teamAr(done.strAwayTeam))}</span></div>`
+      + `<div class="big"><span>${esc(teamAr(done.strHomeTeam, done.idHomeTeam))} <span class="sc">${ar(+done.intHomeScore)} - ${ar(+done.intAwayScore)}</span> ${esc(teamAr(done.strAwayTeam, done.idAwayTeam))}</span></div>`
       + `<div class="sub">النتيجة النهائية · ${day}</div></div>`;
   }
   const ev = MATCHES[id];
   if(!ev || shown.has(ev.idEvent)) return '';
-  const home = esc(teamAr(ev.strHomeTeam)), away = esc(teamAr(ev.strAwayTeam));
+  const home = esc(teamAr(ev.strHomeTeam, ev.idHomeTeam)), away = esc(teamAr(ev.strAwayTeam, ev.idAwayTeam));
   const d = toDate(ev), diff = d - now;
   if(diff < -2.5*3600000 || diff > CONFIG.weekWindowDays * 86400000) return '';   // in progress stays on screen
   shown.add(ev.idEvent);
@@ -1045,7 +1048,7 @@ function matchRows(){
         : now >= t ? '<span class="live">مباشر</span>'
         : (new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone}).format(d) === today ? 'اليوم' : day(d))
           + ' ' + fmt12(+p.hour % 24, +p.minute);
-      return `<li><span>${esc(teamAr(ev.strHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam))}</span><span class="dt">${when}</span></li>`;
+      return `<li><span>${esc(teamAr(ev.strHomeTeam, ev.idHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam, ev.idAwayTeam))}</span><span class="dt">${when}</span></li>`;
     });
 }
 

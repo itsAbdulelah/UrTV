@@ -203,6 +203,10 @@ def main():
     html = html.replace("__F_MARKS__", data_uri(ROOT / "assets/fonts/NotoNaskhArabic-Marks.woff2", "font/woff2"))
     teams = json.loads((ROOT / "assets/shared/teams-ar.json").read_text(encoding="utf-8"))
     html = html.replace("__TEAMS_AR__", json.dumps(teams, ensure_ascii=False))
+    # by TheSportsDB id: "Al-Faisaly" and "Al Faisaly" are different clubs under one name key
+    clubs = json.loads((ROOT / "assets/shared/teams.json").read_text(encoding="utf-8"))
+    by_id = {c["id"]: c["ar"] for c in clubs if c.get("id") and c.get("ar")}
+    html = html.replace("__TEAMS_BY_ID__", json.dumps(by_id, ensure_ascii=False))
     html = html.replace("__VERSES__", json.dumps(verses_for_screen(), ensure_ascii=False))
     html = html.replace("__HADITH__", json.dumps(hadith_for_screen(), ensure_ascii=False))   # checked by CI
 
