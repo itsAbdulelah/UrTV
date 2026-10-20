@@ -32,10 +32,10 @@ Navigate with the remote, or `adb shell input keyevent DPAD_DOWN|DPAD_UP|DPAD_CE
 | A4 | Region «منطقة الرياض» → pick «الخرج» | Dialog closes, row shows «المدينة: الخرج» |
 | A5 | المدينة → search → type `ابها` or `Abha` | Results list from the internet; pick one → row updates |
 | A6 | المدينة → search → type `zzzzqq` | Toast «لا توجد نتائج» |
-| A7 | الفرق المتابعة → «تصفح الدوريات…» → each league one by one | Each opens a list of clubs. **Record any league that shows «لا توجد نتائج»** |
-| A8 | الفرق المتابعة → «تصفح الدوريات…» → دوري روشن → pick Al-Nassr | Toast «جارٍ جلب الاسم بالعربية…», row shows «النصر» (Arabic) |
-| A9 | الفرق المتابعة → «بحث عن أي فريق أو منتخب…» → `Real Madrid` | Results; pick → row shows an Arabic name (e.g. «ريال مدريد») |
-| A10 | الفرق المتابعة → دوري يلو | Al-Zulfi is in the list (the free API lists only 10 clubs; it is added) |
+| A7 | الفرق المتابعة → «تصفح الدوريات…» → each league one by one, and «المنتخبات» | Each opens at once, even offline, with every club of the last two seasons in Arabic (MLS: 30). **Record any league that is short or shows «لا توجد نتائج»** |
+| A8 | الفرق المتابعة → «تصفح الدوريات…» → دوري روشن → pick «النصر» | Toast «تمت متابعة النصر» right away (no network needed), row shows «النصر» |
+| A9 | الفرق المتابعة → «بحث عن أي فريق أو منتخب…» → `Real Madrid`, then `الاهلي`, `العين`, `atletico` | Results at once: «ريال مدريد»; the Saudi «الأهلي» first, then «الأهلي المصري»; the Saudi «العين» before «العين الإماراتي»; «أتلتيكو مدريد». Pick one → row shows its Arabic name |
+| A10 | الفرق المتابعة → دوري يلو | Every club of the league, «الزلفي» among them |
 | A11 | التصنيفات → tick دراما + كوميديا → حفظ | Row lists both |
 | A12 | اللغات → tick الإنجليزية → حفظ | Row shows it |
 | A13 | مسلسلات مختارة → «إضافة مسلسل» → `The Last of Us` → pick | Toast «تمت إضافة …», row lists the show (English title) |

@@ -20,6 +20,10 @@ on:
 permissions:
   contents: write
 
+concurrency:   # one run per branch: a newer push replaces the run in progress
+  group: team-ids-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ids:
     runs-on: ubuntu-latest

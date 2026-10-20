@@ -158,7 +158,7 @@ def clean_ar(label):
     """Wikidata's «نادي العين (الإمارات)» -> «العين»; '' if it isn't plain Arabic the screen's font can draw."""
     s = re.sub(r"[ً-ٰٟـ]", "", str(label or "")).translate(FONT_FIX)
     s = re.sub(r"\s*\([^)]*\)\s*", " ", s).strip()
-    s = re.sub(r"^(?:ال)?نادي\s+|^فريق\s+", "", s)
+    s = re.sub(r"^(?:(?:ال)?نادي|فريق)(?:\s+|$)", "", s)
     s = re.sub(r"\s+(?:لكرة القدم|الرياضي|للألعاب الرياضية)$", "", s).strip()
     return s if ARABIC_NAME.fullmatch(s) and len(s.replace(" ", "")) >= 2 else ""
 
