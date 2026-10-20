@@ -35,18 +35,13 @@ commands in English. Everything except the start runs without me.
 Note the clock time at the start and end of each numbered step.
 
 1. Install, with the test build of the apps: `APK_TAG=apk-next optimize/run.sh`
-2. My choices: the same each cycle, except the clubs, which change so the club search gets tried too:
+2. My choices: the same each cycle, except the clubs, so the club search gets tried too:
    - `optimize/saver.sh city الرياض`
-   - the clubs, one `optimize/saver.sh find-team <name>` each, written exactly like this:
-
-     | cycle | clubs | what it tries |
-     |---|---|---|
-     | 1 | الهلال, السعودية | a Saudi club the online search misses; the national team |
-     | 2 | النصر, نيوم | a Saudi club; a renamed, newly promoted one |
-     | 3 | الأهلي, Real Madrid | a name two clubs share (pick the Saudi one); a club abroad, in English |
-
-     then `optimize/saver.sh teams <id:Name> <id:Name>` with the ids they gave, and write down each search's
-     first line in the report
+   - the clubs, new and random each cycle: `optimize/venv/bin/python -I optimize/random-clubs.py` prints a seed and
+     6 to 10 names, as people would write them (always a Saudi club in Arabic, a national team, and a club abroad
+     in English). Run `optimize/saver.sh find-team <name>` for each, exactly as printed, take the club meant (a
+     Saudi one before a namesake abroad), then `optimize/saver.sh teams <id:Name> ...` with all of them, in that
+     order. Write the seed and each search's first line in the report
    - `optimize/saver.sh card verse`, `optimize/saver.sh home-card none`
    - `optimize/dock.sh apps`, then `optimize/dock.sh set <the 6 packages>` in my order
    - `optimize/saver.sh update`
@@ -69,7 +64,8 @@ Save it as `optimize/run/cycle-report.md`, show it to me, and keep it in English
 - you (agent and model), the computer's system, and the TV's maker, model and Android version;
 - a table: cycle × step, each with its time and OK or FAILED;
 - every `!!` line, error and retry, with the step it came from;
-- each cycle's club searches: what came back, and whether the right club was first;
+- each cycle's seed and club searches: what came back, whether the right club was first, and any name
+  that found nothing;
 - `dock.sh hidden` from cycle 1, and whether it was the same in all three;
 - after each reset: anything left behind (our apps, disabled packages, home or screensaver not the TV's own);
 - anything slower, or different, in one cycle than in the others.
