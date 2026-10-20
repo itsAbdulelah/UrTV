@@ -35,10 +35,18 @@ commands in English. Everything except the start runs without me.
 Note the clock time at the start and end of each numbered step.
 
 1. Install, with the test build of the apps: `APK_TAG=apk-next optimize/run.sh`
-2. My choices, always the same:
+2. My choices: the same each cycle, except the clubs, which change so the club search gets tried too:
    - `optimize/saver.sh city الرياض`
-   - `optimize/saver.sh find-team الهلال`, then `optimize/saver.sh find-team السعودية`, then
-     `optimize/saver.sh teams <id:Name> <id:Name>` with the two ids they gave
+   - the clubs, one `optimize/saver.sh find-team <name>` each, written exactly like this:
+
+     | cycle | clubs | what it tries |
+     |---|---|---|
+     | 1 | الهلال, السعودية | a Saudi club the online search misses; the national team |
+     | 2 | النصر, نيوم | a Saudi club; a renamed, newly promoted one |
+     | 3 | الأهلي, Real Madrid | a name two clubs share (pick the Saudi one); a club abroad, in English |
+
+     then `optimize/saver.sh teams <id:Name> <id:Name>` with the ids they gave, and write down each search's
+     first line in the report
    - `optimize/saver.sh card verse`, `optimize/saver.sh home-card none`
    - `optimize/dock.sh apps`, then `optimize/dock.sh set <the 6 packages>` in my order
    - `optimize/saver.sh update`
@@ -61,6 +69,7 @@ Save it as `optimize/run/cycle-report.md`, show it to me, and keep it in English
 - you (agent and model), the computer's system, and the TV's maker, model and Android version;
 - a table: cycle × step, each with its time and OK or FAILED;
 - every `!!` line, error and retry, with the step it came from;
+- each cycle's club searches: what came back, and whether the right club was first;
 - `dock.sh hidden` from cycle 1, and whether it was the same in all three;
 - after each reset: anything left behind (our apps, disabled packages, home or screensaver not the TV's own);
 - anything slower, or different, in one cycle than in the others.
