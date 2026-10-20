@@ -23,7 +23,11 @@ for stream in (sys.stdout, sys.stderr):   # Windows writes pipes in its own code
 
 SHARED = Path(__file__).resolve().parents[1] / "assets/shared"
 ARABIC = json.loads((SHARED / "teams-ar.json").read_text(encoding="utf-8"))      # English name -> Arabic
-CLUBS = json.loads((SHARED / "teams.json").read_text(encoding="utf-8"))         # [{id, en, ar, leagues}]
+try:
+    CLUBS = json.loads((SHARED / "teams.json").read_text(encoding="utf-8"))     # [{id, en, ar, leagues}]
+except FileNotFoundError:   # an old checkout: search online only
+    print("   (assets/shared/teams.json is missing: searching TheSportsDB only)", file=sys.stderr)
+    CLUBS = []
 API = "https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t="
 
 
