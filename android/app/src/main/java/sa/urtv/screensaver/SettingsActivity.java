@@ -207,55 +207,83 @@ public class SettingsActivity extends Activity {
             }).show();
     }
 
+    /** Our bundled list first (every club of these leagues, offline); TheSportsDB only if that is missing. */
     private void pickLeague(final int slot) {
-        String[] labels = new String[Prefs.LEAGUES.length];
-        for (int i = 0; i < labels.length; i++) labels[i] = Prefs.LEAGUES[i][1];
+        final String[] labels = new String[Prefs.LEAGUES.length + 1];
+        for (int i = 0; i < Prefs.LEAGUES.length; i++) labels[i] = Prefs.LEAGUES[i][1];
+        labels[Prefs.LEAGUES.length] = "المنتخبات";
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدوري")
             .setItems(labels, (d, i) -> {
-                final String[] lg = Prefs.LEAGUES[i];
-                fetch(SPORTS + "search_all_teams.php?l=" + Uri.encode(lg[0]), json -> showTeams(slot, json, lg[1], lg[0]));
+                String league = i < Prefs.LEAGUES.length ? Prefs.LEAGUES[i][0] : Teams.NATIONAL;
+                List<TeamSearch.Team> clubs = Teams.inLeague(this, league);
+                if (!clubs.isEmpty()) showOurs(clubs, labels[i], false);
+                else if (i < Prefs.LEAGUES.length)
+                    fetch(SPORTS + "search_all_teams.php?l=" + Uri.encode(league), json -> showTeams(slot, json, labels[i], league));
+                else toast("تعذّر تحميل القائمة، جرّب البحث عن الفريق");
             }).show();
     }
 
     private void searchTeam(final int slot) {
-        ask("اسم الفريق بالإنجليزية (مثل Al-Nassr أو Real Madrid)",
-            q -> fetch(SPORTS + "searchteams.php?t=" + Uri.encode(q), json -> showTeams(slot, json, "اختر الفريق", null)));
+        ask("اسم الفريق بالعربية أو الإنجليزية (مثل الهلال أو Real Madrid)", q -> {
+            List<TeamSearch.Team> found = Teams.search(this, q);
+            if (!found.isEmpty()) showOurs(found.subList(0, Math.min(found.size(), 30)), "اختر الفريق", true);
+            else if (!Arabic.hasArabic(q))   // a club outside our list: TheSportsDB's search, in English only
+                fetch(SPORTS + "searchteams.php?t=" + Uri.encode(q), json -> showTeams(slot, json, "اختر الفريق", null));
+            else toast("لا توجد نتائج، جرّب اسم الفريق بالإنجليزية");
+        });
+    }
+
+    /** Clubs from our list: their Arabic names are already there, so following one needs no network. */
+    private void showOurs(final List<TeamSearch.Team> clubs, String title, boolean withLeague) {
+        String[] rows = new String[clubs.size()];
+        for (int i = 0; i < rows.length; i++) {
+            TeamSearch.Team t = clubs.get(i);
+            rows[i] = Teams.label(this, t);
+            if (withLeague && t.leagues.length > 0)
+                rows[i] += "  ·  " + (Teams.NATIONAL.equals(t.leagues[0]) ? "منتخب" : leagueAr(t.leagues[0]));
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
+            .setItems(rows, (d, i) -> {
+                TeamSearch.Team t = clubs.get(i);
+                addTeam(t.id, t.ar.isEmpty() ? Arabic.translit(t.en) : t.ar);
+            }).show();
     }
 
     private static final String SPORTS = "https://www.thesportsdb.com/api/v1/json/123/";
 
-    /** league != null: keep only clubs that really play in it, so a wrong API answer never shows. */
+    /** TheSportsDB's answer, when our list has nothing. league != null: keep only clubs that really play in it. */
     private void showTeams(final int slot, String json, String title, String league) throws Exception {
-                JSONArray all = new JSONObject(json).optJSONArray("teams");
-                JSONArray a = new JSONArray();
-                for (int i = 0; all != null && i < all.length(); i++) {
-                    JSONObject t = all.getJSONObject(i);
-                    boolean inLeague = league == null;
-                    for (int k = 1; !inLeague && k <= 7; k++)
-                        inLeague = league.equalsIgnoreCase(t.optString(k == 1 ? "strLeague" : "strLeague" + k));
-                    if (inLeague) a.put(t);
-                }
-                for (String[] x : Prefs.LEAGUE_EXTRA) {   // clubs the listing misses
-                    if (league == null || !league.equalsIgnoreCase(x[0])) continue;
-                    boolean listed = false;
-                    for (int i = 0; i < a.length(); i++) listed |= x[1].equals(a.getJSONObject(i).optString("idTeam"));
-                    if (!listed) a.put(new JSONObject().put("idTeam", x[1]).put("strTeam", x[2]).put("strLeague", x[0]));
-                }
-                if (a.length() == 0) {
-                    toast(league == null ? "لا توجد نتائج" : "تعذّر تحميل هذا الدوري، جرّب البحث عن الفريق");
-                    return;
-                }
-                final int n = Math.min(a.length(), 60);
-                final String[] ids = new String[n], names = new String[n], rows = new String[n];
-                for (int i = 0; i < n; i++) {
-                    JSONObject t = a.getJSONObject(i);
-                    ids[i] = t.optString("idTeam");
-                    names[i] = t.optString("strTeam");
-                    rows[i] = Arabic.team(this, names[i]) + "  ·  " + leagueAr(t.optString("strLeague", ""));
-                }
-                new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
-                    .setItems(rows, (d, i) -> inArabic(names[i], Arabic.TEAM, ar -> addTeam(ids[i], ar)))
-                    .show();
+        JSONArray all = new JSONObject(json).optJSONArray("teams");
+        JSONArray a = new JSONArray();
+        for (int i = 0; all != null && i < all.length(); i++) {
+            JSONObject t = all.getJSONObject(i);
+            if (!"Soccer".equalsIgnoreCase(t.optString("strSport", "Soccer"))) continue;
+            boolean inLeague = league == null;
+            for (int k = 1; !inLeague && k <= 7; k++)
+                inLeague = league.equalsIgnoreCase(t.optString(k == 1 ? "strLeague" : "strLeague" + k));
+            if (inLeague) a.put(t);
+        }
+        if (a.length() == 0) {
+            toast(league == null ? "لا توجد نتائج" : "تعذّر تحميل هذا الدوري، جرّب البحث عن الفريق");
+            return;
+        }
+        final int n = Math.min(a.length(), 60);
+        final String[] ids = new String[n], names = new String[n], rows = new String[n];
+        final TeamSearch.Team[] ours = new TeamSearch.Team[n];
+        for (int i = 0; i < n; i++) {
+            JSONObject t = a.getJSONObject(i);
+            ids[i] = t.optString("idTeam");
+            names[i] = t.optString("strTeam");
+            ours[i] = Teams.byId(this, ids[i]);
+            rows[i] = (ours[i] != null ? Teams.label(this, ours[i]) : Arabic.team(this, names[i]))
+                + "  ·  " + leagueAr(t.optString("strLeague", ""));
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
+            .setItems(rows, (d, i) -> {
+                if (ours[i] != null && !ours[i].ar.isEmpty()) addTeam(ids[i], ours[i].ar);
+                else inArabic(names[i], Arabic.TEAM, ar -> addTeam(ids[i], ar));
+            })
+            .show();
     }
 
     private void pickMany(final String key, String title, final String[][] options) {

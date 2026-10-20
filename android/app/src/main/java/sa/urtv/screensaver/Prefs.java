@@ -18,8 +18,8 @@ final class Prefs {
     };
 
     // League name exactly as TheSportsDB spells it (checked from CI, .github/tools/fetch_leagues.py), Arabic label.
-    // Teams are fetched by name: with the free key, lookup_all_teams.php ignores the id and always
-    // returns the same English League One sample.
+    // Their clubs come from assets/shared/teams.json (Teams), which CI builds from these leagues' matches
+    // (.github/tools/team_ids.py reads this list); a new league here needs its minimum club count there.
     static final String[][] LEAGUES = {
         {"Saudi-Arabian Pro League", "دوري روشن السعودي"},
         {"Saudi First Division League", "دوري يلو (الدرجة الأولى)"},
@@ -35,12 +35,6 @@ final class Prefs {
         {"UAE Pro League", "الدوري الإماراتي"},
         {"Qatar Stars League", "الدوري القطري"},
         {"American Major League Soccer", "الدوري الأمريكي"},
-    };
-
-    // The free key lists only the first 10 clubs of a league (alphabetical): clubs we want listed anyway.
-    // League name, team id, English name; ids from .github/tools/find_teams.py (CI).
-    static final String[][] LEAGUE_EXTRA = {
-        {"Saudi First Division League", "150643", "Al-Zulfi"},
     };
 
     // TVMaze genre (sent to the page), Arabic label

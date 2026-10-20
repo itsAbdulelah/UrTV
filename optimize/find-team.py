@@ -5,11 +5,13 @@
     optimize/saver.sh find-team --list Saudi    every club of the leagues whose name has "Saudi"
 
 Our list, assets/shared/teams.json, has every club of the app's leagues and the national teams, with their ids
-(built in CI from their matches: TheSportsDB's free search misses some clubs, the Saudi Al-Hilal among them).
-Only a club that isn't in it is searched online: Arabic names go through assets/shared/teams-ar.json to their
+(built in CI from their matches: TheSportsDB's free search misses some clubs, the Saudi Al-Hilal among them). It is
+searched as the TV's settings screen searches it (optimize/team_search.py: «الاهلي» = «الأهلي», «Atletico» =
+«Atlético», the Saudi club first when names clash). Only a club that isn't in it is searched online: Arabic names go through assets/shared/teams-ar.json to their
 English spellings, and the usual spellings are tried too (Al-Hilal, Al Hilal, Hilal, … FC).
 Prints `id:Name  |  Arabic  |  leagues`, ready for `optimize/saver.sh teams`.
 """
+import importlib.util
 import json
 import re
 import sys
@@ -29,6 +31,10 @@ except FileNotFoundError:   # an old checkout: search online only
     print("   (assets/shared/teams.json is missing: searching TheSportsDB only)", file=sys.stderr)
     CLUBS = []
 API = "https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t="
+# by path: `python -I` (how saver.sh runs this) leaves this folder off the import path
+_spec = importlib.util.spec_from_file_location("team_search", Path(__file__).resolve().parent / "team_search.py")
+team_search = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(team_search)
 
 
 def plain(ar):   # Arabic compared without harakat, tatweel or hamza forms
@@ -36,22 +42,12 @@ def plain(ar):   # Arabic compared without harakat, tatweel or hamza forms
     return ar.translate(str.maketrans("أإآة", "اااه"))
 
 
-def key(name):   # Al-Hilal, Al Hilal, al hilal FC -> alhilal
-    return re.sub(r"[^a-z]", "", re.sub(r"\s+(S?FC|F\.C\.|Club)$", "", name.strip(), flags=re.I).lower())
+def ours(q):   # the clubs in our list that match, best first
+    return team_search.search(CLUBS, q)
 
 
-def ours(q):   # the clubs in our list that match: the exact name first, else names that contain it
-    if re.search(r"[\u0600-\u06FF]", q):
-        english = {key(en) for en, ar in ARABIC.items() if plain(ar) == plain(q)}
-        exact = [c for c in CLUBS if (c["ar"] and plain(c["ar"]) == plain(q)) or key(c["en"]) in english]
-        return exact or [c for c in CLUBS if c["ar"] and plain(q) in plain(c["ar"])]
-    exact = [c for c in CLUBS if key(c["en"]) == key(q)]
-    return exact or [c for c in CLUBS if key(q) and key(q) in key(c["en"])]
-
-
-def show(clubs, limit=15):
-    saudi = lambda c: not any("Saudi" in l for l in c["leagues"])   # noqa: E731
-    for c in sorted(clubs, key=lambda c: (saudi(c), c["en"]))[:limit]:
+def show(clubs, limit=15):   # in the order given: search() already ranks them
+    for c in clubs[:limit]:
         print(f"{c['id']}:{c['en']}  |  {c['ar'] or '-'}  |  {', '.join(c['leagues'])}")
 
 
@@ -78,8 +74,9 @@ def main():
         sys.exit("usage: optimize/saver.sh find-team NAME   (Arabic or English)")
     if sys.argv[1] == "--list":
         words = [w.lower() for w in sys.argv[2:]]
-        show([c for c in CLUBS if any(all(w in l.lower() for w in words) for l in c["leagues"])] if words else CLUBS,
-             limit=None)
+        found = [c for c in CLUBS if any(all(w in l.lower() for w in words) for l in c["leagues"])] if words else CLUBS
+        saudi = lambda c: not any("Saudi" in l for l in c["leagues"])   # noqa: E731
+        show(sorted(found, key=lambda c: (saudi(c), c["en"])), limit=None)
         return
     hit = ours(q)
     if hit:
