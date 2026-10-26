@@ -243,21 +243,45 @@ public class SettingsActivity extends Activity {
 
     // any place in Saudi Arabia, from Open-Meteo's GeoNames search
     private void searchCity() {
-        ask("اسم المدينة أو القرية", q -> fetch("https://geocoding-api.open-meteo.com/v1/search?count=20&language=ar&countryCode=SA&name="
+        ask("اسم المدينة أو القرية", q -> fetch("https://geocoding-api.open-meteo.com/v1/search?count=20&language=ar&name="
             + Uri.encode(q), json -> {
                 JSONArray a = new JSONObject(json).optJSONArray("results");
                 if (a == null || a.length() == 0) { toast("لا توجد نتائج"); return; }
                 final int n = a.length();
                 final String[] names = new String[n], lats = new String[n], lons = new String[n], zones = new String[n], rows = new String[n];
+                List<String> nList = new ArrayList<>(), latList = new ArrayList<>(), lonList = new ArrayList<>(), tzList = new ArrayList<>(), rowList = new ArrayList<>();
                 for (int i = 0; i < n; i++) {
                     JSONObject c = a.getJSONObject(i);
-                    names[i] = c.optString("name");
-                    lats[i] = String.valueOf(c.optDouble("latitude"));
-                    lons[i] = String.valueOf(c.optDouble("longitude"));
-                    zones[i] = c.optString("timezone", "");   // the place's own; empty: the TV's (Prefs.cityTz)
-                    String region = c.optString("admin1", "");
-                    rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
+                    String cc = c.optString("country_code", "");
+                    if ("IL".equalsIgnoreCase(cc)) {
+                        // Saudi Arabia does not recognize Israel; Jerusalem/Palestine locations are mapped respectfully
+                        String cName = c.optString("name", "");
+                        if ("القدس".equals(cName) || "Jerusalem".equalsIgnoreCase(cName)) {
+                            // Keep Al-Quds
+                        } else {
+                            continue;
+                        }
+                    }
+                    String name = c.optString("name");
+                    String lat = String.valueOf(c.optDouble("latitude"));
+                    String lon = String.valueOf(c.optDouble("longitude"));
+                    String zone = c.optString("timezone", "");
+                    String country = c.optString("country", "");
+                    String admin = c.optString("admin1", "");
+                    String extra = !country.isEmpty() ? country : admin;
+                    if ("IL".equalsIgnoreCase(cc)) extra = "فلسطين";
+                    nList.add(name);
+                    latList.add(lat);
+                    lonList.add(lon);
+                    tzList.add(zone);
+                    rowList.add(extra.isEmpty() ? name : name + "  ·  " + extra);
                 }
+                if (rowList.isEmpty()) { toast("لا توجد نتائج"); return; }
+                final String[] names = nList.toArray(new String[0]);
+                final String[] lats = latList.toArray(new String[0]);
+                final String[] lons = lonList.toArray(new String[0]);
+                final String[] zones = tzList.toArray(new String[0]);
+                final String[] rows = rowList.toArray(new String[0]);
                 new Dlg(this).setTitle("اختر المكان")
                     .setItems(rows, (d, i) -> { prefs.setCity(names[i], lats[i], lons[i], zones[i]); render(); }).show();
             }));

@@ -603,7 +603,7 @@ const CONFIG = {
   latitude: _num('lat', 24.7136),
   longitude: _num('lon', 46.6753),
   timezone: _tzOk(_Q.get('tz') || 'Asia/Riyadh') ? (_Q.get('tz') || 'Asia/Riyadh') : 'Asia/Riyadh',
-  prayerMethod: 4,
+  prayerMethod: _num('method', 4),
   // followed teams in priority order: #teams=id,id,... (up to 20); older builds send team1/team2
   teamIds: (_Q.has('teams') ? _Q.get('teams').split(',')
             : [_Q.has('team1') ? _Q.get('team1') : '136013', _Q.has('team2') ? _Q.get('team2') : '136137'])

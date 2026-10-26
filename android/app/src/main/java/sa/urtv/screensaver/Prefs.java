@@ -130,10 +130,66 @@ final class Prefs {
         String own = sp.getString("cityTz", "");
         if (!own.isEmpty()) return own;
         String[] c = city();
+        // Check if there is a known timezone for built-in international cities
+        String known = cityTimezone(c[0]);
+        if (known != null) return known;
         for (Cities.Region r : Cities.REGIONS)
             for (String[] x : r.cities)
                 if (x[0].equals(c[0]) && x[1].equals(c[1]) && x[2].equals(c[2])) return TZ;
         return java.util.TimeZone.getDefault().getID();
+    }
+
+    /** Prayer calculation method: 4 (Umm al-Qura) for GCC/default, 5 for Egypt/Levant/Africa, 3 (MWL), 1 (Karachi), 2 (ISNA). */
+    int prayerMethod() {
+        String tz = cityTz();
+        if (tz.startsWith("Africa/Cairo") || tz.startsWith("Africa/Tripoli") || tz.startsWith("Africa/Tunis") || tz.startsWith("Africa/Algiers") || tz.startsWith("Africa/Casablanca") || tz.startsWith("Africa/Khartoum") || tz.startsWith("Asia/Beirut") || tz.startsWith("Asia/Damascus") || tz.startsWith("Asia/Amman") || tz.startsWith("Asia/Jerusalem") || tz.startsWith("Asia/Gaza") || tz.startsWith("Asia/Hebron"))
+            return 5;   // Egyptian General Authority of Survey
+        if (tz.startsWith("Asia/Karachi"))
+            return 1;   // University of Islamic Sciences, Karachi
+        if (tz.startsWith("America/"))
+            return 2;   // ISNA
+        if (tz.startsWith("Europe/"))
+            return 3;   // Muslim World League
+        return 4;       // Umm al-Qura default for Saudi Arabia & Gulf
+    }
+
+    static String cityTimezone(String name) {
+        switch (name) {
+            case "الكويت": return "Asia/Kuwait";
+            case "أبوظبي": case "دبي": case "الشارقة": case "مسقط": case "صلالة": return "Asia/Dubai";
+            case "الدوحة": case "الريان": return "Asia/Qatar";
+            case "المنامة": case "المحرق": return "Asia/Bahrain";
+            case "القاهرة": case "الإسكندرية": return "Africa/Cairo";
+            case "عمان": return "Asia/Amman";
+            case "القدس": case "رام الله": return "Asia/Hebron";
+            case "غزة": return "Asia/Gaza";
+            case "بيروت": return "Asia/Beirut";
+            case "دمشق": return "Asia/Damascus";
+            case "بغداد": case "البصرة": case "أربيل": return "Asia/Baghdad";
+            case "صنعاء": case "عدن": return "Asia/Aden";
+            case "الخرطوم": return "Africa/Khartoum";
+            case "طرابلس": return "Africa/Tripoli";
+            case "تونس": return "Africa/Tunis";
+            case "الجزائر": return "Africa/Algiers";
+            case "الرباط": case "الدار البيضاء": return "Africa/Casablanca";
+            case "نواكشوط": return "Africa/Nouakchott";
+            case "مقديشو": return "Africa/Mogadishu";
+            case "جيبوتي": return "Africa/Djibouti";
+            case "موروني": return "Indian/Comoro";
+            case "إسطنبول": case "أنقرة": return "Europe/Istanbul";
+            case "كوالالمبور": return "Asia/Kuala_Lumpur";
+            case "جاكرتا": return "Asia/Jakarta";
+            case "إسلام آباد": return "Asia/Karachi";
+            case "طشقند": return "Asia/Tashkent";
+            case "باكو": return "Asia/Baku";
+            case "لندن": return "Europe/London";
+            case "باريس": return "Europe/Paris";
+            case "واشنطن": case "نيويورك": return "America/New_York";
+            case "طوكيو": return "Asia/Tokyo";
+            case "بكين": return "Asia/Shanghai";
+            case "موسكو": return "Europe/Moscow";
+            default: return null;
+        }
     }
 
     static final int MAX_TEAMS = 20;
@@ -367,7 +423,7 @@ final class Prefs {
         String[] city = city();
         List<String> ids = new ArrayList<>();
         for (String s : shows()) ids.add(s.split("\\|", 2)[0]);
-        return "city=" + Uri.encode(city[0]) + "&lat=" + city[1] + "&lon=" + city[2]
+        return "city=" + Uri.encode(city[0]) + "&lat=" + city[1] + "&lon=" + city[2] + "&method=" + prayerMethod()
             + "&tz=" + Uri.encode(cityTz())
             + "&teams=" + join(teamIds(), ",")
             + "&events=" + join(list("events"), ",")

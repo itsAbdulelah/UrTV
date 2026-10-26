@@ -4,7 +4,7 @@
 #   optimize/saver.sh off                          the TV's own screensaver back (the one from before setup; else a stock one; else none);
 #                                                  ours stays installed, with its settings
 #   optimize/saver.sh on                           ours again
-#   optimize/saver.sh cities                       built-in Saudi cities by region
+#   optimize/saver.sh cities                       built-in cities by region
 #   optimize/saver.sh city الرس                    a built-in city (Arabic name as listed, or a short form of it: مكة; says if it fits several)
 #   optimize/saver.sh city 'اسم' 25.86 43.49 Asia/Riyadh   any place: name, latitude, longitude and its time zone (refused without the zone
 #                                                      unless the name is a built-in city; a built-in city is always Asia/Riyadh)
